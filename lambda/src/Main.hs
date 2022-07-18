@@ -67,8 +67,8 @@ step x = x
 instance Show Term where
     show t = case t of
         (Var x) -> x
-        (App m n) -> "(" ++ (show m) ++ ") (" ++ (show n) ++ ")"
-        (Abs m n) -> "λ" ++ (show m) ++ "." ++ (show n)
+        (App m n) -> "(" ++ (show m) ++ (show n) ++ ")"
+        (Abs m n) -> "(λ" ++ (show m) ++ "." ++ (show n) ++ ")"
 
 prot = 
     (App 
