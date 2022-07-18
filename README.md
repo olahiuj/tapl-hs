@@ -4,4 +4,5 @@ Implementations of type checkers in Types and Programming Languages using Haskel
 
 # Progress
 
-* - [ ] Chap.04 Arith
+* - [*] Chap.04 Arith
+* - [*] Chap.05 Lambda

@@ -52,17 +52,21 @@ redex (App _ _) = True
 redex (Abs m n) = (redex m) || (redex n)
 
 step:: Conf -> Conf
-step (App m n, i) = case m of
-    Abs x l -> sub x n (l, i)
-    otherwise -> (App m' n, i') where (m', i') = step (m, i)
+step (App (Abs x l) n, i) = sub x n (l, i)
+step (App m n, i)
+    | redex m = let (m', i') = step (m, i) in (App m' n, i')
+    | redex n = let (n', i') = step (n, i) in (App m n', i')
 
 step (Abs m n, i)
-    | redex m = let (m', i') = step (m, i) in
-        (Abs m' n, i') 
     | redex n = let (n', i') = step (n, i) in
         (Abs m n', i')
     | otherwise = (Abs m n, i)
 step x = x
+
+run:: Conf -> Conf
+run t = if t' == t then t else t' where t' = step t
+
+-- for display
 
 instance Show Term where
     show t = case t of
@@ -79,3 +83,46 @@ prot =
                 (App 
                     (Abs (Var "x") (Var "x")) 
                     (Var "z")))))
+
+tru = 
+    (Abs
+        (Var "t")
+        (Abs
+            (Var "f")
+            (Var "t")))
+
+fls = 
+    (Abs
+        (Var "t")
+        (Abs
+            (Var "f")
+            (Var "f")))
+
+and = 
+    (Abs
+        (Var "a")
+        (Abs
+            (Var "b")
+            (App
+                (App
+                    (Var "a")
+                    (Var "b"))
+                fls)))
+
+zero = fls
+
+succ =
+    (Abs 
+        (Var "n")
+        (Abs
+            (Var "f")
+            (Abs
+                (Var "x")
+                (App
+                    (Var "f")
+                    (App
+                        (App
+                            (Var "n")
+                            (Var "f"))
+                        (Var "x"))))))
+-- f(((λt.λf.f)f)x)
