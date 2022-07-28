@@ -126,7 +126,6 @@ if_then_else =
                         (Var' "a"))
                     (Var' "b")))))
 
-
 {-
 prot
 prot_ = getTerm $ runParser pTerm $ show prot
