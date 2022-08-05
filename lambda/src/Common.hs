@@ -16,115 +16,95 @@ data Term' =
 -- for display
 instance Show Term where
     show (Var x) = show x 
-    show (Abs n) = "(λ." ++ (show n) ++ ")"
+    show (Abs n) = "(λ." ++ show n ++ ")"
     show (App m n) = case m of
-        (Var x) -> (show x) ++ (show n)
-        otherwise -> "(" ++ (show m) ++ ") " ++ (show n)
+        (Var x) -> show x ++ show n
+        _ -> "(" ++ show m ++ ") " ++ show n
 
 instance Show Term' where
     show (Var' x) = x
-    show (Abs' m n) = "(λ" ++ (show m) ++ "." ++ (show n) ++ ")"
-    show (App' m n) = "(" ++ (show m) ++ " " ++ (show n) ++ ")"
+    show (Abs' m n) = "λ" ++ show m ++ "." ++ show n
+    show (App' m (Var' x)) = case m of
+        Abs' _ _ -> "(" ++ show m ++ ") " ++ x
+        _        -> show m ++ " " ++ x
+    show (App' m n) = case m of
+        Abs' _ _ -> "(" ++ show m ++ ") (" ++ show n ++ ")"
+        _        -> show m ++ " (" ++ show n ++ ")"
 
-prot = 
-    (App' 
-        (Abs' (Var' "x") (Var' "x")) 
-        (App' 
-            (Abs' (Var' "x") (Var' "x")) 
-            (Abs' (Var' "z") 
-                (App' 
-                    (Abs' (Var' "x") (Var' "x")) 
-                    (Var' "z")))))
+λ:: Term' -> Term' -> Term'
+λ x t = Abs' x t
 
-tru = 
-    (Abs'
-        (Var' "t")
-        (Abs'
-            (Var' "f")
-            (Var' "t")))
+(|>):: Term' -> Term' -> Term'
+m |> n = App' m n
 
-fls = 
-    (Abs'
-        (Var' "t")
-        (Abs'
-            (Var' "f")
-            (Var' "f")))
+infixr 0 ·
+(·):: (a -> b) -> a -> b
+(·) = ($)
 
-band = 
-    (Abs'
-        (Var' "a")
-        (Abs'
-            (Var' "b")
-            (App'
-                (App'
-                    (Var' "a")
-                    (Var' "b"))
-                fls)))
+iden:: Term'
+iden = λ x x 
+    where
+        x = Var' "x"
 
+prot:: Term'
+prot = iden |> (iden |> (λ z · iden |> z))
+    where 
+        x = Var' "x"
+        z = Var' "z"
+
+tru:: Term'
+tru = λ t $ λ f t
+    where
+        t = Var' "t"
+        f = Var' "f"
+
+fls:: Term'
+fls = λ t $ λ f f
+    where
+        t = Var' "t"
+        f = Var' "f"
+
+band:: Term'
+band = λ a · λ b · a |> b |> fls
+    where
+        a = Var' "a"
+        b = Var' "b"
+
+zero:: Term'
 zero = fls
 
-suc =
-    (Abs' 
-        (Var' "n")
-        (Abs'
-            (Var' "f")
-           (Abs'
-                (Var' "x")
-                (App'
-                    (Var' "f")
-                    (App'
-                        (App'
-                            (Var' "n")
-                            (Var' "f"))
-                        (Var' "x"))))))
+suc:: Term'
+suc = λ n · λ f · λ x · f |> (n |> f |> x)
+    where
+        n = Var' "n"
+        f = Var' "f"
+        x = Var' "x"
 -- f(((λt.λf.f)f)x)
 
-one = (App' suc zero)
-two = (App' suc one)
-thr = (App' suc two)
+one:: Term'
+one = suc |> zero
+two:: Term'
+two = suc |> one
+thr:: Term'
+thr = suc |> two
 
-divergent =
-    (Abs'
-        (Var' "x")
-        (App'
-            (App'
-                (Var' "x")
-                (Var' "x"))
-            (App'
-                (Var' "x")
-                (Var' "x"))))
+divergent:: Term'
+divergent = λ x · (x |> x) |> (x |> x)
+    where
+        x = Var' "x"
 
-comb_Y = 
-    (Abs'
-        (Var' "F")
-        (App'
-            (Abs'
-                (Var' "x")
-                (App'
-                    (Var' "F")
-                    (App'
-                        (Var' "x")
-                        (Var' "x"))))
-            (Abs'
-                (Var' "x")
-                (App'
-                    (Var' "F")
-                    (App'
-                        (Var' "x")
-                        (Var' "x"))))))
+comb_Y:: Term'
+comb_Y = λ f · (λ x · f |> (x |> x)) |> (λ x · f |> (x |> x))
+    where
+        f = Var' "f"
+        x = Var' "x"
 
-if_then_else = 
-    (Abs'
-        (Var' "e")
-        (Abs'
-            (Var' "a")
-            (Abs'
-                (Var' "b")
-                (App'
-                    (App'
-                        (Var' "e")
-                        (Var' "a"))
-                    (Var' "b")))))
+if_then_else:: Term'
+if_then_else = λ e · λ a · λ b · e |> a |> b
+    where
+        e = Var' "e"
+        a = Var' "a"
+        b = Var' "b"
 
 {-
 prot
