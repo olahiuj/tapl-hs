@@ -1,4 +1,4 @@
-import Data.Maybe
+import Data.Maybe (fromJust)
 
 import Common
 import Parser
@@ -7,7 +7,7 @@ import Bruijn
 rewriteClosedTerm:: Term' -> Maybe Term
 rewriteClosedTerm = rewrite []
 
-parseThenRun:: String -> Either String Term
+parseThenRun:: String -> Either (Err Char) Term
 parseThenRun = (run <$>) . (fromJust . rewriteClosedTerm <$>) . (fst <$>) . (runParser pTerm)
 
 strAdd:: Term'

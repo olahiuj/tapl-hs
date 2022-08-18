@@ -1,102 +1,139 @@
-module Parser where
+module Parser 
+    ( Parser, Err
+    , pChar, pString
+    , pId, pInt
+    , anyOf, some, many
+    , between, pPar, pBrac, pCurBrac
+    , runParser) where
 
-import Data.Either
-    
-import Common
+import Data.Either (Either)
+
+-- error
+data Err c = Err [c] deriving (Eq);
+
+instance (Show c) => Show (Err c) where
+  show (Err xs) = "Expect " ++ show xs
+
+instance Semigroup (Err c) where
+  Err c1 <> Err c2 = Err $ c1 ++ c2
+
+instance Monoid (Err c) where
+  mempty = Err []
 
 -- parser
-data Parser c a = Parser {
-    runParser:: [c] -> Either String (a, [c])
+type Result c a = (a, [c])
+
+newtype Parser c a = Parser {
+    runParser :: [c] -> Either (Err c) (Result c a)
 }
 
-satisfy:: (Eq c, Show c) => c -> Parser c [c]
+satisfy :: (Eq c, Show c) => c -> Parser c c
 satisfy expect = Parser go where
-    go [] = Left "EOF"
+    go [] = Left $ Err [expect]
     go (x:xs)
-        | (== expect) x = Right ([x], xs)
-        | otherwise = Left $ "Expecting " ++ show expect ++ ", only to find " ++ show x
-
-pChar:: Char -> Parser Char [Char]
-pChar = satisfy
+        | (== expect) x = Right (x, xs)
+        | otherwise = Left $ Err [expect]
 
 -- transform
 instance Functor (Parser c) where
-    fmap f (Parser p) = Parser $ \input -> do
-        (result, rest) <- p input
-        return (f result, rest)
+    fmap f (Parser p) = Parser $ \s -> do
+        (a, c) <- p s
+        return (f a, c)
 
 -- orElse
 class Applicative f => Alternative f where
-    empty:: f a
-    (<|>):: f a -> f a -> f a
+    empty :: f a
+    (<|>) :: f a -> f a -> f a
 
 instance Alternative (Parser c) where
-    empty = Parser $ const $ Left "empty"
+    empty = Parser $ const $ Left mempty
 
-    Parser p1 <|> Parser p2 = Parser $ \input ->
-        case p1 input of 
-            Right (result1, rest1) -> Right (result1, rest1)
-            Left err -> case p2 input of 
-                Right (result2, rest2) -> Right (result2, rest2)
-                Left _ -> Left $ err
+    Parser p1 <|> Parser p2 = Parser $ \s ->
+        case p1 s of 
+            Right (a1, c1) -> Right (a1, c1)
+            Left err1 -> case p2 s of 
+                Right (a2, c2) -> Right (a2, c2)
+                Left err2 -> Left $ err1 <> err2
 
 -- andThen
 instance Applicative (Parser c) where
-    pure x = Parser $ \input -> Right (x, input)
+    pure x = Parser $ \s -> Right (x, s)
     
-    Parser f <*> Parser p = Parser $ \input -> do
-        (result1, rest1) <- f input
-        (result2, rest2) <- p rest1
-        return (result1 result2, rest2)
+    Parser f <*> Parser p = Parser $ \s -> do
+        (a1, c1) <- f s
+        (a2, c2) <- p c1
+        return (a1 a2, c2)
 
 instance Monad (Parser c) where
     return = pure
     
-    Parser p >>= f = Parser $ \input -> do
-        (result, rest) <- p input
-        runParser (f result) rest
+    Parser p >>= f = Parser $ \s -> do
+        (a, c) <- p s
+        runParser (f a) c
 
-anyOf:: [Parser c a] -> (Parser c a)
-anyOf [] = error "empty choices"
-anyOf (x:[]) = x
-anyOf (x:xs) = x <|> anyOf xs
+-- combinators
+anyOf :: [Parser c a] -> Parser c a
+anyOf = foldr (<|>) empty
 
-many:: Parser c a -> Parser c [a]
-many (Parser p) = Parser $ go where
-    go input = case p input of
-        Left _ -> Right ([], input)
-        Right (result1, rest1) ->
-            Right (result1:result2, rest2) where
-                Right (result2, rest2) = go rest1
+some :: Parser c a -> Parser c [a]
+some p = do
+    c1 <- p
+    c2 <- many p
+    return (c1:c2)
 
-fromString:: String -> Term'
-fromString = fromRight (Var' "∅") . (fst <$>) . runParser pTerm
+many :: Parser c a -> Parser c [a]
+many (Parser p) = Parser go where
+    go s = either fLeft fRight $ p s where
+        fLeft = const $ Right ([], s)
+        fRight (a1, c1) = Right (a1:a2, c2) where
+            Right (a2, c2) = go c1
 
--- parsing λ-terms
-pID:: Parser Char String
-pID = anyOf $ pChar <$> ['a'..'z']
+between :: Parser c a1 -> Parser c a2 -> Parser c a3 -> Parser c a3
+between l r m = l *> m <* r
 
-pVar:: Parser Char Term'
-pVar = Var' <$> pID
+sepBy :: Parser c a -> Parser c a -> Parser c [a]
+sepBy s p = do
+    x  <- p
+    xs <- many $ do
+        _ <- s
+        r <- p
+        return r
+    return (x:xs)
 
-pTerm:: Parser Char Term'
-pTerm = pVar <|> pAbs <|> pApp
+-- basics
+genParser :: (Show a, Read a) => a -> Parser Char a
+genParser = (read <$>) . pString . show
 
-pAbs:: Parser Char Term'
-pAbs = do
-    _ <- pChar '('
-    _ <- pChar 'λ'
-    v <- pVar
-    _ <- pChar '.'
-    t <- pTerm
-    _ <- pChar ')'
-    return $ Abs' v t
+pChar :: Char -> Parser Char Char
+pChar = satisfy
 
-pApp:: Parser Char Term'
-pApp = do
-    _ <- pChar '('
-    m <- pTerm
-    _ <- pChar ' '
-    n <- pTerm
-    _ <- pChar ')'
-    return $ App' m n
+pString :: String -> Parser Char String
+pString = sequence . fmap pChar
+
+pLetter :: Parser Char Char
+pLetter = anyOf $ pChar <$> ['a' .. 'z']
+
+pId :: Parser Char String
+pId = many pLetter
+
+pDigit :: Parser Char Char
+pDigit = anyOf $ pChar <$> ['0' .. '9']
+
+pNonZeroDigit :: Parser Char Char
+pNonZeroDigit = anyOf $ pChar <$> ['1' .. '9']
+
+pInt :: Parser Char Int
+pInt = do
+    x  <- pNonZeroDigit
+    xs <- many pDigit
+    return $ read (x:xs)
+
+pPar :: Parser Char a -> Parser Char a
+pPar = between (pChar '(') (pChar ')')
+
+pBrac :: Parser Char a -> Parser Char a
+pBrac = between (pChar '[') (pChar ']')
+
+pCurBrac :: Parser Char a -> Parser Char a
+pCurBrac = between (pChar '{') (pChar '}')
+

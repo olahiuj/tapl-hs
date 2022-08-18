@@ -1,5 +1,9 @@
 module Common where
 
+import Parser
+
+import Data.Either (fromRight)
+
 -- defs
 data Term =
     Var Int            -- x
@@ -32,7 +36,7 @@ instance Show Term' where
         _        -> show m ++ " (" ++ show n ++ ")"
 
 λ:: Term' -> Term' -> Term'
-λ x t = Abs' x t
+λ = Abs'
 
 (|>):: Term' -> Term' -> Term'
 m |> n = App' m n
@@ -41,6 +45,32 @@ infixr 0 ·
 (·):: (a -> b) -> a -> b
 (·) = ($)
 
+-- parsing λ-terms
+fromString:: String -> Term'
+fromString = fromRight (Var' "∅") . (fst <$>) . runParser pTerm
+
+pVar:: Parser Char Term'
+pVar = Var' <$> pId
+
+pTerm:: Parser Char Term'
+pTerm = anyOf [pVar, pAbs, pApp]
+
+pAbs:: Parser Char Term'
+pAbs = pPar $ do
+    _ <- pChar 'λ'
+    v <- pVar
+    _ <- pChar '.'
+    t <- pTerm
+    return $ Abs' v t
+
+pApp:: Parser Char Term'
+pApp = pPar $ do
+    m <- pTerm
+    _ <- pChar ' '
+    n <- pTerm
+    return $ App' m n
+
+-- tests
 iden:: Term'
 iden = λ x x 
     where
@@ -93,14 +123,14 @@ divergent = λ x · (x |> x) |> (x |> x)
     where
         x = Var' "x"
 
-comb_Y:: Term'
-comb_Y = λ f · (λ x · f |> (x |> x)) |> (λ x · f |> (x |> x))
+combY:: Term'
+combY = λ f · (λ x · f |> (x |> x)) |> (λ x · f |> (x |> x))
     where
         f = Var' "f"
         x = Var' "x"
 
-if_then_else:: Term'
-if_then_else = λ e · λ a · λ b · e |> a |> b
+ifThenElse:: Term'
+ifThenElse = λ e · λ a · λ b · e |> a |> b
     where
         e = Var' "e"
         a = Var' "a"
