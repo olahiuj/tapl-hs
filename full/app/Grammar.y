@@ -4,8 +4,8 @@ module Grammar
   )
 where
 import System.IO
+import Def
 import Lexer
-import Term
 }
 
 %name fullSTLC
@@ -32,6 +32,7 @@ import Term
   zero        { TZero     }
   true        { TTrue     }
   false       { TFalse    }
+  letrec      { TLetRec   }
   ';'         { TSemiColon  }
   '='         { TAssign   }
   '('         { TLParen   }
@@ -41,25 +42,27 @@ import Term
 
 %%
 
-Term  : var                         { Var' $1       }
-      | Term Term                   { App' $1 $2    }
-      | func var ':' Type Term      { Abs' $2 $4 $5 }
-      | if Term then Term else Term { Ite' $4 $6 $2 }
-      | let var '=' Term in Term    { Lin' $2 $4 $6 }
-      | Term ';' Term               { Seq' $1 $3    }
-      | prd Term                    { Prd' $2       }
-      | suc Term                    { Suc' $2       }
-      | isz Term                    { IsZ' $2       }
-      | false                       { False'        }
-      | true                        { True'         }
-      | zero                        { Zero'         }
-      | unit                        { Unit'         }
+Term  : var                         { VarF $1       }
+      | Term Term                   { AppF $1 $2    }
+      | func var ':' Type Term      { AbsF $2 $4 $5 }
+      | if Term then Term else Term { IteF $4 $6 $2 }
+      | let var '=' Term in Term    { LinF $2 $4 $6 }
+      | Term ';' Term               { SeqF $1 $3    }
+      | prd Term                    { PrdF $2       }
+      | suc Term                    { SucF $2       }
+      | isz Term                    { IsZF $2       }
+      | false                       { FalseF        }
+      | true                        { TrueF         }
+      | zero                        { ZeroF         }
+      | unit                        { UnitF         }
       | '(' Term ')'                { $2            }
-      | Term as Type                { Asc' $1 $3    }
+      | Term as Type                { AscF $1 $3    }
+      | letrec var ':' Type
+        '=' Term in Term            { LriF $2 $4 $6 $8 }
 
-Type  : unitType                    { UnitType'     }
-      | boolType                    { BoolType'     }
-      | natType                     { NatType'      }
+Type  : unitType                    { UnitTypeF     }
+      | boolType                    { BoolTypeF     }
+      | natType                     { NatTypeF      }
       | Type '->' Type              { $1 :=> $3     }
       | '(' Type ')'                { $2            }
 
@@ -67,10 +70,10 @@ Type  : unitType                    { UnitType'     }
 parseError :: [Token] -> a
 parseError _ = error "Parse error"
 
-parse :: String -> Term
-parse = compTerm . fullSTLC . lexer
+parse :: String -> FTerm
+parse = fullSTLC . lexer
 
-testFile :: String -> IO Term
+testFile :: String -> IO FTerm
 testFile file = do
   cont <- readFile file
   print cont

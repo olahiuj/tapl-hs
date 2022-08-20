@@ -1,7 +1,6 @@
-module Lexer
-where
+module Lexer where
 
-import Term
+import Def
 
 import Data.Char
   ( isAlpha
@@ -9,103 +8,33 @@ import Data.Char
   , isSpace 
   )
 
-type Name = String
-
 data Token
--- types
   = TUnitType
   | TBoolType
-  | TNatType 
--- keywords
+  | TNatType        -- types
   | TFunc 
   | TElse 
   | TThen 
   | TUnit 
+  | TLetRec
   | TLet  
   | TSuc  
   | TPrd  
   | TIsZ  
   | TIf   
   | TIn   
-  | TAs   
--- variables
-  | TVar String
--- constants
+  | TAs             -- keywords
+  | TVar String     -- variables
   | TZero   
   | TTrue   
-  | TFalse  
--- symbols
+  | TFalse          -- constants
   | TSemiColon
   | TAssign 
   | TLParen 
   | TRParen 
   | TArrow
-  | TColon  
-  deriving (Show, Eq);
-
-data Term'
-  = Var' Name     
-  | App' Term' Term'
-  | Abs' Name  Type' Term'
-  | Ite' Term' Term' Term'
-  | Lin' Name  Term' Term'
-  | Seq' Term' Term'
-  | Prd' Term'
-  | Suc' Term'    
-  | IsZ' Term'    
-  | False'        
-  | True'         
-  | Zero'         
-  | Unit'
-  | Asc' Term' Type'
-  deriving (Show, Eq);
-
-data Type'
-  = UnitType'
-  | BoolType'
-  | NatType'
-  | Type' :=> Type'
-  deriving (Show, Eq);
-
-compTerm :: Term' -> Term
-compTerm (Var' v) = Var_ v
-compTerm (App' m n) = App_ m' n'
-  where m' = compTerm m
-        n' = compTerm n
-compTerm (Abs' v t m) = Abs_ v t' m'
-  where t' = compType t
-        m' = compTerm m
-compTerm (Ite' t f e) = Ite_ t' f' e'
-  where t' = compTerm t
-        f' = compTerm f
-        e' = compTerm e
-compTerm (Lin' v m n) = Lin_ v m' n'
-  where m' = compTerm m
-        n' = compTerm n
-compTerm (Seq' m n) = Seq_ m' n'
-  where m' = compTerm m
-        n' = compTerm n
-compTerm (Prd' m) = Prd_ m'
-  where m' = compTerm m
-compTerm (Suc' m) = Suc_ m'
-  where m' = compTerm m
-compTerm (IsZ' m) = IsZ_ m'
-  where m' = compTerm m
-compTerm False' = False_
-compTerm True' = True_
-compTerm Zero' = Zero_
-compTerm Unit' = Unit_
-compTerm (Asc' tm tp) = Asc_ tm' tp'
-  where tm' = compTerm tm
-        tp' = compType tp
-
-compType :: Type' -> Type
-compType UnitType' = UnitType_
-compType BoolType' = BoolType_
-compType NatType'  = NatType_
-compType (a :=> b) = a' :-> b'
-  where a' = compType a
-        b' = compType b
+  | TColon          -- symbols
+  deriving (Show, Eq)
 
 lexer :: String -> [Token]
 lexer [] = []
@@ -141,6 +70,7 @@ lexVar s = let
       "else" -> TElse
       "then" -> TThen
       "unit" -> TUnit
+      "letrec"  -> TLetRec
       "let"  -> TLet
       "suc"  -> TSuc
       "prd"  -> TPrd
@@ -152,5 +82,4 @@ lexVar s = let
       "True" -> TTrue
       "False"-> TFalse
       _      -> TVar tok
-
 

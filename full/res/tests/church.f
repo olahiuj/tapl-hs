@@ -17,7 +17,7 @@ let succ = func nf:
     )
 ) in 
 
-let add4 = (succ (succ (succ zero))) add1
+let add3 = (succ (succ (succ zero))) add1
 
-in add4 Zero
+in add3 Zero
       

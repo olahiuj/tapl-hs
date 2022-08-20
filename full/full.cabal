@@ -28,9 +28,9 @@ executable full
     other-modules:
         Lexer,
         Grammar,
-        Term,
-        Type,
-        Exec
+        Eval,
+        Compile,
+        Def
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
