@@ -6,6 +6,7 @@ module Eval where
 --  3. Constructors must end with underscore "_" 
 
 import Def
+import Data.Maybe (fromJust)
 
 eval :: RTerm -> RTerm
 eval = until isValue reduce
@@ -32,6 +33,13 @@ reduce (AscR tm tp)
   | otherwise  = AscR (reduce tm) tp
 reduce m@(FixR (AbsR n)) = sub 0 m n
 reduce (FixR m) = FixR (reduce m)
+reduce (FldR fs) = FldR fs'
+  where fs' = lhs ++ [reduce <$> redex] ++ tail rhs
+        redex = head rhs
+        (lhs, rhs) = span (isValue . snd) fs
+reduce (AccR m@(FldR fs) f)
+  | isValue m = fromJust $ lookup f fs
+  | otherwise = AccR (reduce m) f
 reduce x = x
 
 isValue :: RTerm -> Bool
@@ -43,6 +51,7 @@ isValue (PrdR m) = False
 isValue (IsZR m) = isValue m
 isValue AbsR {} = True
 isValue UnitR  = True
+isValue (FldR fs) = all (isValue . snd) fs
 isValue _ = False
 
 shift :: Int -> Int -> RTerm -> RTerm
@@ -69,6 +78,8 @@ shift d c = go where
           e' = go e
   go (AscR tm tp) = AscR (go tm) tp
   go (FixR m) = FixR (go m)
+  go (FldR fs) = FldR $ (go <$>) <$> fs
+  go (AccR f v) = AccR (go f) v
 
 -- x->l->t->t[l/x]
 sub :: Int -> RTerm -> RTerm -> RTerm
@@ -87,6 +98,8 @@ sub x l = go where
   go UnitR = UnitR
   go FalseR= FalseR
   go (SucR m) = SucR $ go m 
+  go (FldR fs) = FldR $ (go <$>) <$> fs
+  go (AccR f v) = AccR (go f) v
   go (PrdR m) = PrdR $ go m
   go (IsZR m) = IsZR $ go m
   go (IteR t f e) = IteR (go t) (go f) (go e)

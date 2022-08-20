@@ -32,8 +32,12 @@ data Token
   | TAssign 
   | TLParen 
   | TRParen 
+  | TLBrack 
+  | TRBrack 
   | TArrow
-  | TColon          -- symbols
+  | TColon
+  | TComma
+  | TDot            -- symbols
   deriving (Show, Eq)
 
 lexer :: String -> [Token]
@@ -48,7 +52,11 @@ lexer s@(x:xs)
       '*' -> lexComment 1 (tail xs)
       _   -> TLParen: rest
   | ')' == x  = TRParen: rest
-  | ':' == x  = TColon: rest
+  | '{' == x  = TLBrack: rest
+  | '}' == x  = TRBrack: rest
+  | ':' == x  = TColon : rest
+  | ',' == x  = TComma : rest
+  | '.' == x  = TDot : rest
   | '-' == x  
     = case head xs of
       '>' -> TArrow: lexer (tail xs)

@@ -37,8 +37,12 @@ import Lexer
   '='         { TAssign   }
   '('         { TLParen   }
   ')'         { TRParen   }
+  '{'         { TLBrack   }
+  '}'         { TRBrack   }
   '->'        { TArrow    }
   ':'         { TColon    }
+  ','         { TComma    }
+  '.'         { TDot      }
 
 %%
 
@@ -59,12 +63,22 @@ Term  : id                          { VarF $1       }
       | Term as Type                { AscF $1 $3    }
       | let rec id ':' Type
         '=' Term in Term            { LriF $3 $5 $7 $9 }
+      | '{' Field '}'               { FldF $2       }
+      | Term '.' id                 { AccF $1 $3    }
+
+Field : id '=' Term                 { [($1, $3)]    }
+      | id '=' Term ',' Field       { ($1, $3): $5  }
 
 Type  : unitType                    { UnitTypeF     }
       | boolType                    { BoolTypeF     }
       | natType                     { NatTypeF      }
       | Type '->' Type              { $1 :=> $3     }
+      | '{' FldType '}'             { FldTypeF $2   }
       | '(' Type ')'                { $2            }
+
+FldType
+      : id ':' Type                 { [($1, $3)]    }
+      | id ':' Type ',' FldType     { ($1, $3): $5  }
 
 {
 parseError :: [Token] -> a

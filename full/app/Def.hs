@@ -26,6 +26,8 @@ data FTerm
   | LriF Name  FType FTerm FTerm
   | LinF Name  FTerm FTerm
   | SeqF FTerm FTerm
+  | FldF [(Name, FTerm)]
+  | AccF FTerm Name
   deriving (Show, Eq)
 
 infixr :=>
@@ -34,6 +36,7 @@ data FType
   | BoolTypeF
   | NatTypeF
   | FType :=> FType
+  | FldTypeF [(Name, FType)]
   deriving (Show, Eq)
 
 -- Runtime Terms
@@ -51,6 +54,8 @@ data RTerm
   | UnitR
   | AscR RTerm RType
   | FixR RTerm
+  | FldR [(Name, RTerm)]
+  | AccR RTerm Name
   deriving (Eq)
 
 infixr :->
@@ -59,6 +64,7 @@ data RType
   | BoolTypeR
   | NatTypeR
   | RType :-> RType
+  | FldTypeR [(Name, RType)]
   deriving (Show, Eq)
 
 instance Show RTerm where
@@ -69,4 +75,7 @@ instance Show RTerm where
   show FalseR = "False"
   show TrueR = "True"
   show UnitR = "Unit"
+  show (FldR fs) = "{ " ++ foldl1 (\x y -> x ++ ", " ++ y) (showpair <$> fs) ++ " }"
+    where showpair (x, y) = x ++ "= " ++ show y
+  show (AccR m f) = show m ++ "." ++ f
   show _ = "not a value"

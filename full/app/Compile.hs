@@ -1,7 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Compile where
 
-import Prelude hiding ( lookup )
 import Data.Map
   ( Map
   , lookup
@@ -32,7 +31,7 @@ typecheckF:: TypingContext -> FTerm -> FType
 typecheckF ctx = go where
   go :: FTerm -> FType
   go (VarF v)
-    | member v ctx = fromJust $ lookup v ctx
+    | member v ctx = fromJust $ Data.Map.lookup v ctx
     | otherwise = error $ "Var " ++ v ++ " not bounded"
   go (AppF m n) = appF (go m) (go n)
   go (AbsF v t n) = t :=> typecheckF (insert v t ctx) n
@@ -72,6 +71,15 @@ typecheckF ctx = go where
       then a
       else error "Fix should have type T -> T"
     _ ->   error "Fix should have type T -> T"
+  go (FldF fs) = FldTypeF fs'
+    where fs' = (go <$>) <$> fs
+  go (AccF m f) = case go m of
+    (FldTypeF fs) ->
+      let result = Prelude.lookup f fs
+      in case result of
+        Nothing -> error "Field not found"
+        Just t  -> t
+    _ -> error "Accessing non Struct field"
 
 -- compile Types
 compType :: FType -> RType
@@ -81,6 +89,8 @@ compType NatTypeF  = NatTypeR
 compType (a :=> b) = a' :-> b'
   where a' = compType a
         b' = compType b
+compType (FldTypeF fs) = FldTypeR fs'
+  where fs' = (compType <$>) <$> fs
 
 -- De Bruijn form
 indexOf:: forall a. (Eq a, Show a) => a -> [a] -> Int
@@ -115,6 +125,9 @@ rewrite ctx = go where
           tp' = compType tp
   go (FixF m) = FixR m'
     where m' = go m
+  go (FldF fs) = FldR fs'
+    where fs' = (go <$>) <$> fs
+  go (AccF m f) = AccR (go m) f
   go e = error $ show e ++ " DTerm shouldn't contain these"
 
 -- desugar
