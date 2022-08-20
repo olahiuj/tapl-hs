@@ -1,5 +1,11 @@
 {
+module Grammar
+  ( parse
+  )
+where
+import System.IO
 import Lexer
+import Term
 }
 
 %name fullSTLC
@@ -58,4 +64,15 @@ Type  : unitType                    { UnitType'     }
 {
 parseError :: [Token] -> a
 parseError _ = error "Parse error"
+
+parse :: String -> Term
+parse = compTerm . fullSTLC . lexer
+
+testFile :: String -> IO Term
+testFile file = do
+  cont <- readFile file
+  print cont
+  print $ lexer cont
+  print $ fullSTLC $ lexer cont
+  return $ parse cont
 }

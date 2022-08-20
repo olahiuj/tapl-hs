@@ -77,10 +77,9 @@ iden = λ x x
         x = Var' "x"
 
 prot:: Term'
-prot = iden |> (iden |> (λ z · iden |> z))
+prot = iden |> (iden |> (λ x · iden |> x))
     where 
         x = Var' "x"
-        z = Var' "z"
 
 tru:: Term'
 tru = λ t $ λ f t

@@ -1,12 +1,12 @@
 module Parser 
     ( Parser, Err
-    , pChar, pString
-    , pId, pInt
-    , anyOf, some, many
+    , pChar, pString, pWS, pCharCI, pStringCI
+    , pId, pInt, genParser
+    , anyOf, some, many, optional, sepBy
     , between, pPar, pBrac, pCurBrac
     , runParser) where
 
-import Data.Either (Either)
+import Data.Char (toLower, toUpper)
 
 -- error
 data Err c = Err [c] deriving (Eq);
@@ -114,7 +114,7 @@ pLetter :: Parser Char Char
 pLetter = anyOf $ pChar <$> ['a' .. 'z']
 
 pId :: Parser Char String
-pId = many pLetter
+pId = some pLetter
 
 pDigit :: Parser Char Char
 pDigit = anyOf $ pChar <$> ['0' .. '9']
@@ -137,3 +137,20 @@ pBrac = between (pChar '[') (pChar ']')
 pCurBrac :: Parser Char a -> Parser Char a
 pCurBrac = between (pChar '{') (pChar '}')
 
+-- case insensitive, lowercase is returned
+pChar':: Char -> Parser Char Char
+pChar' c = toLower <$> ((pChar cLO) <|> (pChar cUP)) where
+    cLO = toLower c
+    cUP = toUpper c
+
+pString':: String -> Parser Char String
+pString' = traverse pCharCI
+
+pWS:: Parser Char Char
+pWS = anyOf $ pChar <$> ['\n','\t',' ']
+
+optional:: (Parser c a) -> (Parser c (Maybe a))
+optional (Parser p) = Parser $ \s ->
+    let fLeft  _      = Right (Nothing, s)
+        fRight (a, c) = Right (Just a, c)
+        in either fLeft fRight $ p s

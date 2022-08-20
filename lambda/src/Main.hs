@@ -8,7 +8,7 @@ rewriteClosedTerm:: Term' -> Maybe Term
 rewriteClosedTerm = rewrite []
 
 parseThenRun:: String -> Either (Err Char) Term
-parseThenRun = (run <$>) . (fromJust . rewriteClosedTerm <$>) . (fst <$>) . (runParser pTerm)
+parseThenRun = (run <$>) . (fromJust . rewriteClosedTerm <$>) . (fst <$>) . runParser pTerm
 
 strAdd:: Term'
 strAdd = fromString "(λm.(λn.(λf.(λx.((m f) ((n f) x))))))"
