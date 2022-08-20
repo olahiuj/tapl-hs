@@ -29,7 +29,9 @@ reduce (Ite_ t f e) = Ite_ t f $ reduce e
 reduce (Seq_ Unit_ n) = n
 reduce (Seq_ m n) = Seq_ (reduce m) n 
 
-reduce (Lin_ v m n) = sub v m n
+reduce (Lin_ v m n)
+  | isValue m = sub v m n
+  | otherwise = Lin_ v (reduce m) n
 
 reduce (Asc_ tm tp)
   | isValue tm = tm

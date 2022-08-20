@@ -57,4 +57,8 @@ typecheck' ctx = go where
   go (Seq_ m n)
     | go m == UnitType_ = go n
     | otherwise = error "Sequential should yield Unit"
-  go (Asc_ tm tp) = tp
+  go (Asc_ tm tp)
+    | go tm == tp = tp
+    | otherwise   = error $
+      "Casting " ++ show (go tm)
+      ++ " to "  ++ show tp

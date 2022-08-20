@@ -21,4 +21,4 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
-full/src/Parser.hs
+app/Grammar.hs

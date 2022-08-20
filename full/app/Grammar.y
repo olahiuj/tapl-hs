@@ -27,6 +27,7 @@ import Term
   isz         { TIsZ      }
   if          { TIf       }
   in          { TIn       }
+  as          { TAs       }
   var         { TVar $$   }
   zero        { TZero     }
   true        { TTrue     }
@@ -54,6 +55,7 @@ Term  : var                         { Var' $1       }
       | zero                        { Zero'         }
       | unit                        { Unit'         }
       | '(' Term ')'                { $2            }
+      | Term as Type                { Asc' $1 $3    }
 
 Type  : unitType                    { UnitType'     }
       | boolType                    { BoolType'     }

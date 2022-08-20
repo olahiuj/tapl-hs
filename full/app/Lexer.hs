@@ -27,6 +27,7 @@ data Token
   | TIsZ  
   | TIf   
   | TIn   
+  | TAs   
 -- variables
   | TVar String
 -- constants
@@ -56,6 +57,7 @@ data Term'
   | True'         
   | Zero'         
   | Unit'
+  | Asc' Term' Type'
   deriving (Show, Eq);
 
 data Type'
@@ -93,6 +95,9 @@ compTerm False' = False_
 compTerm True' = True_
 compTerm Zero' = Zero_
 compTerm Unit' = Unit_
+compTerm (Asc' tm tp) = Asc_ tm' tp'
+  where tm' = compTerm tm
+        tp' = compType tp
 
 compType :: Type' -> Type
 compType UnitType' = UnitType_
@@ -142,6 +147,7 @@ lexVar s = let
       "isZero" -> TIsZ
       "if"   -> TIf
       "in"   -> TIn
+      "as"   -> TAs
       "Zero" -> TZero
       "True" -> TTrue
       "False"-> TFalse
