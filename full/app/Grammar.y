@@ -28,11 +28,11 @@ import Lexer
   if          { TIf       }
   in          { TIn       }
   as          { TAs       }
-  var         { TVar $$   }
+  id          { TId $$    }
   zero        { TZero     }
   true        { TTrue     }
   false       { TFalse    }
-  letrec      { TLetRec   }
+  rec         { TRec      }
   ';'         { TSemiColon  }
   '='         { TAssign   }
   '('         { TLParen   }
@@ -42,11 +42,11 @@ import Lexer
 
 %%
 
-Term  : var                         { VarF $1       }
+Term  : id                          { VarF $1       }
       | Term Term                   { AppF $1 $2    }
-      | func var ':' Type Term      { AbsF $2 $4 $5 }
+      | func id ':' Type Term       { AbsF $2 $4 $5 }
       | if Term then Term else Term { IteF $4 $6 $2 }
-      | let var '=' Term in Term    { LinF $2 $4 $6 }
+      | let id '=' Term in Term     { LinF $2 $4 $6 }
       | Term ';' Term               { SeqF $1 $3    }
       | prd Term                    { PrdF $2       }
       | suc Term                    { SucF $2       }
@@ -57,8 +57,8 @@ Term  : var                         { VarF $1       }
       | unit                        { UnitF         }
       | '(' Term ')'                { $2            }
       | Term as Type                { AscF $1 $3    }
-      | letrec var ':' Type
-        '=' Term in Term            { LriF $2 $4 $6 $8 }
+      | let rec id ':' Type
+        '=' Term in Term            { LriF $3 $5 $7 $9 }
 
 Type  : unitType                    { UnitTypeF     }
       | boolType                    { BoolTypeF     }

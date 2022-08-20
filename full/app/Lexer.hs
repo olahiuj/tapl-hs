@@ -16,7 +16,7 @@ data Token
   | TElse 
   | TThen 
   | TUnit 
-  | TLetRec
+  | TRec
   | TLet  
   | TSuc  
   | TPrd  
@@ -24,7 +24,7 @@ data Token
   | TIf   
   | TIn   
   | TAs             -- keywords
-  | TVar String     -- variables
+  | TId String      -- variables
   | TZero   
   | TTrue   
   | TFalse          -- constants
@@ -43,7 +43,10 @@ lexer s@(x:xs)
   | isSpace x = lexer xs
   | ';' == x  = TSemiColon: rest
   | '=' == x  = TAssign: rest
-  | '(' == x  = TLParen: rest
+  | '(' == x  = 
+    case head xs of
+      '*' -> lexComment 1 (tail xs)
+      _   -> TLParen: rest
   | ')' == x  = TRParen: rest
   | ':' == x  = TColon: rest
   | '-' == x  
@@ -70,7 +73,7 @@ lexVar s = let
       "else" -> TElse
       "then" -> TThen
       "unit" -> TUnit
-      "letrec"  -> TLetRec
+      "rec"  -> TRec
       "let"  -> TLet
       "suc"  -> TSuc
       "prd"  -> TPrd
@@ -81,5 +84,22 @@ lexVar s = let
       "Zero" -> TZero
       "True" -> TTrue
       "False"-> TFalse
-      _      -> TVar tok
+      _      -> TId tok
 
+lexComment :: Int -> String -> [Token]
+lexComment 0 = lexer
+lexComment depth = go where
+  go :: String -> [Token]
+  go [] = []
+  go (x:xs)
+    | '*' == x = 
+      case head xs of
+        ')' -> lexComment (depth - 1) $ tail xs
+        _   -> go $ tail xs
+    | '(' == x =
+      case head xs of
+        '*' -> lexComment (depth + 1) $ tail xs
+        _   -> go $ tail xs
+    | otherwise = go xs
+      
+    
