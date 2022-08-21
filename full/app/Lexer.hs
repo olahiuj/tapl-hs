@@ -12,10 +12,10 @@ data Token
   = TUnitType
   | TBoolType
   | TNatType        -- types
-  | TFunc 
   | TElse 
   | TThen 
   | TUnit 
+  | TFun 
   | TRec
   | TLet  
   | TSuc  
@@ -77,10 +77,10 @@ lexVar s = let
       "Unit" -> TUnitType
       "Bool" -> TBoolType
       "Nat"  -> TNatType
-      "func" -> TFunc
       "else" -> TElse
       "then" -> TThen
       "unit" -> TUnit
+      "fun"  -> TFun
       "rec"  -> TRec
       "let"  -> TLet
       "suc"  -> TSuc

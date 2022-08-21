@@ -56,7 +56,7 @@ data RTerm
   | FixR RTerm
   | FldR [(Name, RTerm)]
   | AccR RTerm Name
-  deriving (Eq)
+  deriving (Show, Eq)
 
 infixr :->
 data RType
@@ -67,15 +67,15 @@ data RType
   | FldTypeR [(Name, RType)]
   deriving (Show, Eq)
 
-instance Show RTerm where
-  show n@(SucR m) = show $ count n
-    where count ZeroR = 0
-          count (SucR x) = 1 + count x
-          count _ = error "not a Number"
-  show FalseR = "False"
-  show TrueR = "True"
-  show UnitR = "Unit"
-  show (FldR fs) = "{ " ++ foldl1 (\x y -> x ++ ", " ++ y) (showpair <$> fs) ++ " }"
-    where showpair (x, y) = x ++ "= " ++ show y
-  show (AccR m f) = show m ++ "." ++ f
-  show _ = "not a value"
+-- instance Show RTerm where
+--   show n@(SucR m) = show $ count n
+--     where count ZeroR = 0
+--           count (SucR x) = 1 + count x
+--           count _ = error "not a Number"
+--   show FalseR = "False"
+--   show TrueR = "True"
+--   show UnitR = "Unit"
+--   show (FldR fs) = "{ " ++ foldl1 (\x y -> x ++ ", " ++ y) (showpair <$> fs) ++ " }"
+--     where showpair (x, y) = x ++ "= " ++ show y
+--   show (AccR m f) = show m ++ "." ++ f
+--   show _ = "not a value"

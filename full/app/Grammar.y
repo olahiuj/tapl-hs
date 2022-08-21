@@ -17,10 +17,10 @@ import Lexer
   unitType    { TUnitType }
   boolType    { TBoolType }
   natType     { TNatType  }
-  func        { TFunc     }
   else        { TElse     }
   then        { TThen     }
   unit        { TUnit     }
+  fun         { TFun      }
   let         { TLet      }
   suc         { TSuc      }
   prd         { TPrd      }
@@ -48,7 +48,7 @@ import Lexer
 
 Term  : id                          { VarF $1       }
       | Term Term                   { AppF $1 $2    }
-      | func id ':' Type Term       { AbsF $2 $4 $5 }
+      | fun id ':' Type Term        { AbsF $2 $4 $5 }
       | if Term then Term else Term { IteF $4 $6 $2 }
       | let id '=' Term in Term     { LinF $2 $4 $6 }
       | Term ';' Term               { SeqF $1 $3    }

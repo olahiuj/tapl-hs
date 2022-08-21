@@ -37,8 +37,10 @@ reduce (FldR fs) = FldR fs'
   where fs' = lhs ++ [reduce <$> redex] ++ tail rhs
         redex = head rhs
         (lhs, rhs) = span (isValue . snd) fs
-reduce (AccR m@(FldR fs) f)
-  | isValue m = fromJust $ lookup f fs
+reduce (AccR m f)
+  | isValue m = case m of
+    (FldR fs) -> fromJust $ lookup f fs
+    _ -> error "Accessing non Fld"
   | otherwise = AccR (reduce m) f
 reduce x = x
 

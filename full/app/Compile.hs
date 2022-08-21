@@ -162,7 +162,7 @@ desugar ctx = go where
   go (AscF m t) 
     = AscF m' t where 
       m' = go m
-  go (LriF v t@(t' :=> _) m n) 
+  go (LriF v t m n) 
     = AppF (AbsF v t n') (FixF (AbsF v t m')) 
     where m' = desugar (insert v t ctx) m
           n' = desugar (insert v t ctx) n
