@@ -1,5 +1,5 @@
 letrec isEven: Nat -> Bool = 
-  func n: Nat (
+  fun n: Nat (
     if isZero n then
       True
     else if isZero (prd n) then

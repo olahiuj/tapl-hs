@@ -1,17 +1,17 @@
-let add1 = func num: Nat (
+let add1 = fun num: Nat (
     suc num
 ) in
 
-let zero = func f0: Nat -> Nat (
-    func x0: Nat (
+let zero = fun f0: Nat -> Nat (
+    fun x0: Nat (
         x0
     )
 ) in 
 
-let succ = func nf: 
+let succ = fun nf: 
   (Nat -> Nat) -> Nat -> Nat (
-    func ff: Nat -> Nat (
-        func xf: Nat (
+    fun ff: Nat -> Nat (
+        fun xf: Nat (
             ff ((nf ff) xf)
         )
     )

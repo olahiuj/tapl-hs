@@ -1,18 +1,18 @@
 let rec add: Nat -> Nat -> Nat =
-  func lhs: Nat (
+  fun lhs: Nat (
     if isZero lhs then
-      func rhs: Nat (
+      fun rhs: Nat (
         rhs
       )
     else 
-      func rhs: Nat (
+      fun rhs: Nat (
         (add (prd lhs)) (suc rhs)
       )
   )
 in
 
 let rec sum: Nat -> Nat = 
-  func n: Nat (
+  fun n: Nat (
     if isZero n then
       Zero
     else
@@ -21,7 +21,7 @@ let rec sum: Nat -> Nat =
 in
 
 let rec fib: Nat -> Nat =
-  func n: Nat (
+  fun n: Nat (
     if isZero n then
       (suc Zero)
     else if isZero (prd n) then
