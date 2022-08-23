@@ -30,7 +30,8 @@ executable full
         Grammar,
         Eval,
         Compile,
-        Def
+        Def,
+        Runtime
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

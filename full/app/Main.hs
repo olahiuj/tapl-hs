@@ -19,7 +19,7 @@ main = do
     getLine
   term <- parseFile $ "/home/jjppp/Code/Project/tapl-hs/full/res/tests/" ++ file
   print $ typecheck term
-  print $ eval $ compile $ desugar empty term
+  print $ eval empty $ compile $ desugar empty term
 {-
   loop term
 

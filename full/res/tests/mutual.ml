@@ -6,15 +6,15 @@ let rec r: {
     if isZero x then
       True
     else
-      (r.isOdd) (prd x)
+      r.isOdd prd x
   ),
   isOdd  = fun x: Nat (
     if isZero x then
       False
     else
-      (r.isEven) (prd x)
+      r.isEven prd x
   )
 }
 
-in (r.isEven) (suc (suc Zero))
+in r.isEven 21
 

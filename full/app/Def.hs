@@ -5,6 +5,8 @@ module Def where
 
 type Name = String
 
+type Store = Int
+
 -- Desugared Terms
 type DTerm = FTerm
 
@@ -28,6 +30,9 @@ data FTerm
   | SeqF FTerm FTerm
   | FldF [(Name, FTerm)]
   | AccF FTerm Name
+  | AssF FTerm FTerm
+  | RefF FTerm
+  | DrfF FTerm
   deriving (Show, Eq)
 
 infixr :=>
@@ -37,6 +42,7 @@ data FType
   | NatTypeF
   | FType :=> FType
   | FldTypeF [(Name, FType)]
+  | RefTypeF FType
   deriving (Show, Eq)
 
 -- Runtime Terms
@@ -56,6 +62,10 @@ data RTerm
   | FixR RTerm
   | FldR [(Name, RTerm)]
   | AccR RTerm Name
+  | RefR RTerm
+  | DrfR RTerm
+  | AssR RTerm RTerm
+  | LocR Store
   deriving (Show, Eq)
 
 infixr :->
@@ -65,6 +75,7 @@ data RType
   | NatTypeR
   | RType :-> RType
   | FldTypeR [(Name, RType)]
+  | RefTypeR RType
   deriving (Show, Eq)
 
 -- instance Show RTerm where

@@ -80,6 +80,16 @@ typecheckF ctx = go where
         Nothing -> error "Field not found"
         Just t  -> t
     _ -> error "Accessing non Struct field"
+  go (RefF m) = RefTypeF (go m)
+  go (AssF m n)
+    | tm == RefTypeF tn = UnitTypeF
+    | otherwise = error "Assignment type mismatch"
+    where tm = go m
+          tn = go n
+  go (DrfF m) =
+    case go m of
+      RefTypeF tm -> tm
+      _ -> error "Dereferencing non reference type"
 
 -- compile Types
 compType :: FType -> RType
@@ -91,6 +101,8 @@ compType (a :=> b) = a' :-> b'
         b' = compType b
 compType (FldTypeF fs) = FldTypeR fs'
   where fs' = (compType <$>) <$> fs
+compType (RefTypeF t) = RefTypeR t'
+  where t' = compType t
 
 -- De Bruijn form
 indexOf:: forall a. (Eq a, Show a) => a -> [a] -> Int
@@ -128,6 +140,9 @@ rewrite ctx = go where
   go (FldF fs) = FldR fs'
     where fs' = (go <$>) <$> fs
   go (AccF m f) = AccR (go m) f
+  go (RefF m) = RefR (go m)
+  go (DrfF m) = DrfR (go m)
+  go (AssF m n) = AssR (go m) (go n)
   go e = error $ show e ++ " DTerm shouldn't contain these"
 
 -- desugar
@@ -173,6 +188,6 @@ desugar ctx = go where
       n' = desugar ctx' n
       ctx' = insert v t ctx
   go (SeqF m n)
-    | check m == UnitTypeF = AppF (AbsF "_" UnitTypeF n) m
+    | check m == UnitTypeF = AppF (AbsF "_" UnitTypeF (go n)) (go m)
     | otherwise = error "Sequencing should yield Unit"
   go x = x

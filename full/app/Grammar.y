@@ -1,4 +1,5 @@
 {
+{-# LANGUAGE ScopedTypeVariables #-}
 module Grammar
   ( parse
   )
@@ -17,6 +18,7 @@ import Lexer
   unitType    { TUnitType }
   boolType    { TBoolType }
   natType     { TNatType  }
+  refType     { TRefType  }
   else        { TElse     }
   then        { TThen     }
   unit        { TUnit     }
@@ -25,6 +27,7 @@ import Lexer
   suc         { TSuc      }
   prd         { TPrd      }
   isz         { TIsZ      }
+  ref         { TRef      }
   if          { TIf       }
   in          { TIn       }
   as          { TAs       }
@@ -34,15 +37,18 @@ import Lexer
   false       { TFalse    }
   rec         { TRec      }
   ';'         { TSemiColon  }
-  '='         { TAssign   }
+  '='         { TBind     }
   '('         { TLParen   }
   ')'         { TRParen   }
   '{'         { TLBrack   }
   '}'         { TRBrack   }
   '->'        { TArrow    }
+  ':='        { TAssign   }
   ':'         { TColon    }
   ','         { TComma    }
   '.'         { TDot      }
+  '!'         { TExc      }
+  int         { TInt $$   }
 
 %%
 
@@ -65,6 +71,10 @@ Term  : id                          { VarF $1       }
         '=' Term in Term            { LriF $3 $5 $7 $9 }
       | '{' Field '}'               { FldF $2       }
       | Term '.' id                 { AccF $1 $3    }
+      | int                         { (applyN SucF $1) ZeroF}
+      | ref Term                    { RefF $2       }
+      | '!' Term                    { DrfF $2       }
+      | Term ':=' Term              { AssF $1 $3    }
 
 Field : id '=' Term                 { [($1, $3)]    }
       | id '=' Term ',' Field       { ($1, $3): $5  }
@@ -72,6 +82,7 @@ Field : id '=' Term                 { [($1, $3)]    }
 Type  : unitType                    { UnitTypeF     }
       | boolType                    { BoolTypeF     }
       | natType                     { NatTypeF      }
+      | refType Type                { RefTypeF $2   }
       | Type '->' Type              { $1 :=> $3     }
       | '{' FldType '}'             { FldTypeF $2   }
       | '(' Type ')'                { $2            }
@@ -86,6 +97,12 @@ parseError _ = error "Parse error"
 
 parse :: String -> FTerm
 parse = fullSTLC . lexer
+
+applyN :: forall a. (a -> a) -> Int -> (a -> a)
+applyN f = go where
+  go :: Int -> (a -> a)
+  go 0 = id
+  go n = \x -> (go (n - 1)) (f x)
 
 testFile :: String -> IO FTerm
 testFile file = do

@@ -6,54 +6,74 @@ module Eval where
 --  3. Constructors must end with underscore "_" 
 
 import Def
+import Runtime
 import Data.Maybe (fromJust)
+import Data.Tuple (swap)
 
-eval :: RTerm -> RTerm
-eval = until isValue reduce
+-- continuation
+type Cont = RTerm -> RTerm
 
-reduce :: RTerm -> RTerm
-reduce (VarR v) = VarR v
-reduce (AppR m n) = case m of
-  (AbsR l) -> if isValue n
-    then shift 0 (-1) $ sub 0 n l
-    else AppR m (reduce n)
-  _ -> AppR (reduce m) n
-reduce (PrdR (SucR m)) = m
-reduce (PrdR ZeroR) = ZeroR
-reduce (PrdR m) = PrdR $ reduce m
-reduce (SucR m) = SucR $ reduce m
-reduce (IsZR ZeroR) = TrueR
-reduce (IsZR (SucR _)) = FalseR
-reduce (IsZR m) = IsZR $ reduce m
-reduce (IteR t _ TrueR ) = t
-reduce (IteR _ f FalseR) = f
-reduce (IteR t f e) = IteR t f $ reduce e
-reduce (AscR tm tp)
-  | isValue tm = tm
-  | otherwise  = AscR (reduce tm) tp
-reduce m@(FixR (AbsR n)) = sub 0 m n
-reduce (FixR m) = FixR (reduce m)
-reduce (FldR fs) = FldR fs'
-  where fs' = lhs ++ [reduce <$> redex] ++ tail rhs
-        redex = head rhs
-        (lhs, rhs) = span (isValue . snd) fs
-reduce (AccR m f)
-  | isValue m = case m of
-    (FldR fs) -> fromJust $ lookup f fs
-    _ -> error "Accessing non Fld"
-  | otherwise = AccR (reduce m) f
-reduce x = x
+eval :: Heap -> RTerm -> Conf
+eval = curry $ until (isValue . snd) (reduce id)
+
+reduce :: Cont -> Conf -> Conf
+reduce con = (con <$>) <$> go where
+  go :: Conf -> Conf
+  go (h, term) = case term of
+    VarR v -> (h, VarR v)
+    AppR f@(AbsR m) n ->
+      if isValue n  
+        then (h, shift 0 (-1) (sub 0 n m))
+        else reduce (AppR f) (h, n)
+    AppR m n -> reduce (`AppR` n) (h, m)
+    PrdR (SucR m) -> (h, m)
+    PrdR ZeroR -> (h, ZeroR)
+    PrdR m -> reduce PrdR (h, m)
+    SucR m -> reduce SucR (h, m)
+    IsZR ZeroR -> (h, TrueR)
+    IsZR (SucR _) -> (h, FalseR)
+    IsZR m -> reduce IsZR (h, m)
+    IteR t _ TrueR  -> (h, t)
+    IteR _ f FalseR -> (h, f)
+    IteR t f e -> reduce (IteR t f) (h, e)
+    AscR tm tp ->
+      if isValue tm
+        then (h, tm)
+        else reduce (`AscR` tp) (h, tm)
+    m@(FixR (AbsR n)) -> (h, sub 0 m n)
+    FixR m -> reduce FixR (h, m)
+    FldR fs -> reduce (\x -> FldR (lhs ++ ((n, x):rhs))) (h, redex)
+      where (lhs, (n, redex):rhs) = span (isValue . snd) fs
+    AccR m f ->
+      if isValue m
+        then case m of
+          (FldR fs) -> (h, fromJust $ lookup f fs)
+          _ -> error "Accessing non Fld"
+        else reduce (`AccR` f) (h, m)
+    RefR m -> if isValue m
+      then swap (alloc m h)
+      else reduce RefR (h, m)
+    DrfR (LocR l) -> (h, load l h)
+    DrfR m -> reduce DrfR (h, m)
+    
+    AssR (LocR l) n ->
+      if isValue n
+      then (store l n h, UnitR)
+      else reduce (AssR (LocR l)) (h, n)
+    AssR m n -> reduce (`AssR` n) (h, m)
+    m -> (h, m)
 
 isValue :: RTerm -> Bool
 isValue ZeroR  = True
 isValue TrueR  = True
 isValue FalseR = True
 isValue (SucR m) = isValue m
-isValue (PrdR m) = False
+isValue (PrdR _) = False
 isValue (IsZR m) = isValue m
 isValue AbsR {} = True
 isValue UnitR  = True
 isValue (FldR fs) = all (isValue . snd) fs
+isValue (LocR _) = True
 isValue _ = False
 
 shift :: Int -> Int -> RTerm -> RTerm
@@ -82,6 +102,10 @@ shift d c = go where
   go (FixR m) = FixR (go m)
   go (FldR fs) = FldR $ (go <$>) <$> fs
   go (AccR f v) = AccR (go f) v
+  go (RefR m) = RefR (go m)
+  go (DrfR m) = DrfR (go m)
+  go (AssR m n) = AssR (go m) (go n)
+  go (LocR l) = LocR l
 
 -- x->l->t->t[l/x]
 sub :: Int -> RTerm -> RTerm -> RTerm
@@ -107,3 +131,7 @@ sub x l = go where
   go (IteR t f e) = IteR (go t) (go f) (go e)
   go (AscR tm tp) = AscR (go tm) tp
   go (FixR m) = FixR (go m)
+  go (RefR m) = RefR (go m)
+  go (DrfR m) = DrfR (go m)
+  go (AssR m n) = AssR (go m) (go n)
+  go (LocR l) = LocR l
